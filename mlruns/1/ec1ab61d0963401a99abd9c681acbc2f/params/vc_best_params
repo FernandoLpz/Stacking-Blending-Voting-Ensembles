@@ -1,0 +1,1 @@
+{'dt__criterion': 'entropy', 'dt__max_depth': 3, 'knn__algorithm': 'ball_tree', 'knn__n_neighbors': 10, 'svm__kernel': 'linear'}
