@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import VotingClassifier
@@ -34,11 +35,13 @@ class Ensemble:
             return KNeighborsClassifier()
         if name == 'svm':
             return SVC(random_state=random_state)
+        if name == 'logistic_regression':
+            return LogisticRegression(random_state=random_state)
 
     def __DecisionTreeClassifier__(self):
 
         # Parameters for Grid Search
-        decision_tree_params = {'criterion': ['gini', 'entropy'], 'max_depth': [2, 3, 4]}
+        decision_tree_params = {'criterion': ['gini', 'entropy'], 'max_depth': [3, 4, 5]}
         
         # Decision Tree Classifier
         decision_tree = Ensemble.__Classifiers__(name='decision_tree')
@@ -93,6 +96,25 @@ class Ensemble:
         mlflow.log_param(f'svm_best_kernel', svm_grid.best_params_['kernel'])
         mlflow.log_metric(f'svm_train_acc', svm_grid.score(self.x_train, self.y_train))
         mlflow.log_metric(f'svm_test_acc', svm_grid.score(self.x_test, self.y_test))
+
+    def __LogisticRegression__(self):
+
+        # Parameters for Grid Search
+        logistic_regression_params = {'solver': ['liblinear', 'sag', 'saga']}
+        
+        # Decision Tree Classifier
+        logistic_regression = Ensemble.__Classifiers__(name='logistic_regression')
+        
+        # Grid Search initialization
+        logistic_regression_grid = GridSearchCV(estimator=logistic_regression, param_grid=logistic_regression_params, cv=10)
+        
+        # Init Grid Search
+        logistic_regression_grid.fit(self.x_train, self.y_train)
+
+        # Logging metrics with MLFlow
+        mlflow.log_param(f'logistic_regression_best_criterion', logistic_regression_grid.best_params_['solver'])
+        mlflow.log_metric(f'logistic_regression_train_acc', logistic_regression_grid.score(self.x_train, self.y_train))
+        mlflow.log_metric(f'logistic_regression_test_acc', logistic_regression_grid.score(self.x_test, self.y_test))
     
     def __VotingClassifier__(self):
 
@@ -100,22 +122,24 @@ class Ensemble:
         # Notice that it is used as prefix the identifier of each ML model followed by a double underscore
         # e.g. decision_tree__, knn__, svm___
         vc_params = {'decision_tree__criterion': ['gini', 'entropy'], 'decision_tree__max_depth': [2, 3, 4],
-                    'knn__n_neighbors': [3, 5, 10], 'knn__algorithm': ['ball_tree', 'kd_tree', 'brute'],
-                    'svm__kernel': ['linear', 'poly', 'rbf', 'sigmoid']}
+                    'knn__n_neighbors': [3, 5, 10], 'knn__algorithm': ['ball_tree', 'kd_tree'],
+                    'svm__kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
+                    'logistic_regression__solver': ['liblinear', 'sag', 'saga']}
 
         # Instantiate classifiers
         decision_tree = Ensemble.__Classifiers__(name='decision_tree')
         knn = Ensemble.__Classifiers__(name='kneighbors')
         svm = Ensemble.__Classifiers__(name='svm')
+        logistic_regression = Ensemble.__Classifiers__(name='logistic_regression')
 
         # Voting Classifier initialization
-        vc = VotingClassifier(estimators=[('decision_tree', decision_tree), ('knn', knn), ('svm', svm)], voting='hard')
+        vc = VotingClassifier(estimators=[('decision_tree', decision_tree), ('knn', knn), ('svm', svm), ('logistic_regression', logistic_regression)], voting='hard')
         
         # Grid Search initialization
-        vc_grid = GridSearchCV(estimator=vc, param_grid=vc_params, cv=10)
+        vc_grid = GridSearchCV(estimator=vc, param_grid=vc_params, cv=5)
         
         # Init Grid Search
-        svc_grid.fit(self.x_train, self.y_train)
+        vc_grid.fit(self.x_train, self.y_train)
 
         # Loggin metrics with MLFlow
         mlflow.log_param(f'vc_best_params', vc_grid.best_params_)
@@ -145,7 +169,7 @@ class Ensemble:
 
 if __name__ == "__main__":
     client = MlflowClient()
-    experiment_id = client.create_experiment('Ensemble_full_3')
+    experiment_id = client.create_experiment('Ensemble_full_6')
 
     ensemble = Ensemble()
     ensemble.load_data()
@@ -159,8 +183,11 @@ if __name__ == "__main__":
     with mlflow.start_run(experiment_id=experiment_id, run_name='KNN'):
         ensemble.__KNearestNeighborsClassifier__()
     
-    # with mlflow.start_run(experiment_id=experiment_id, run_name='test_VC'):
-    #     ensemble.__VotingClassifier__()
+    with mlflow.start_run(experiment_id=experiment_id, run_name='Logistic_Regression'):
+        ensemble.__LogisticRegression__()
+    
+    with mlflow.start_run(experiment_id=experiment_id, run_name='VotingClassifier'):
+        ensemble.__VotingClassifier__()
     
     with mlflow.start_run(experiment_id=experiment_id, run_name='Stacked_Classifier'):
         ensemble.__StackingClassifier__()
