@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/fernandolopez/Documents/personal/ensembles/mlruns/0/4da37f7800954b2b90ba24cd27e5897c/artifacts
+end_time: 1607311114579
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+name: ''
+run_id: 4da37f7800954b2b90ba24cd27e5897c
+run_uuid: 4da37f7800954b2b90ba24cd27e5897c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1607311114547
+status: 3
+tags: []
+user_id: fernandolopez
