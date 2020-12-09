@@ -29,12 +29,20 @@ class Ensemble:
         
         final_learner = GaussianNB()
 
+        meta_model = None
         for clf_id, clf in weak_learners:
+            print(f"Current classifier: {clf_id}")
             predictions_clf = self.k_fold_cross_validation(clf)
-            break
+            
+            # Store predictions for the current classifier
+            if isinstance(meta_model, np.ndarray):
+                meta_model = np.vstack((meta_model, predictions_clf))
+            else:
+                meta_model = predictions_clf
         
-        print(f"x_train: {self.x_train.shape}")
-        print(f"predictions_clf: {predictions_clf.shape}")
+        # Transpose the meta_model
+        meta_model = meta_model.reshape(meta_model.shape[1], meta_model.shape[0])
+        print(f"Meta model shape: {meta_model.shape}")
 
 
     def k_fold_cross_validation(self, clf):
