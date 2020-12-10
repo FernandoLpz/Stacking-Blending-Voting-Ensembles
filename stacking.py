@@ -7,6 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
 
 class Ensemble:
     def __init__(self):
@@ -18,23 +19,24 @@ class Ensemble:
 
     def load_data(self):
         x, y = load_breast_cancer(return_X_y=True)
-        self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x, y, test_size=0.10, random_state=23)
+        self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x, y, test_size=0.3, random_state=23)
     
     def StackingClassifier(self):
 
         weak_learners = [('dt', DecisionTreeClassifier()),
-                        ('rf', RandomForestClassifier()),
                         ('knn', KNeighborsClassifier()),
-                        ('gb', GradientBoostingClassifier())]
+                        ('rf', RandomForestClassifier()),
+                        ('gb', GradientBoostingClassifier()),
+                        ('gn', GaussianNB())]
         
-        final_learner = GaussianNB()
+        final_learner = LogisticRegression()
 
         meta_model = None
         test_predictions = None
 
         for clf_id, clf in weak_learners:
             predictions_clf = self.k_fold_cross_validation(clf)
-            test_predictions_clf = self.train(clf)
+            test_predictions_clf = self.train_level_0(clf)
             
             # Store predictions for the current classifier
             if isinstance(meta_model, np.ndarray):
@@ -49,13 +51,15 @@ class Ensemble:
                 test_predictions = test_predictions_clf
         
         # Transpose the meta_model
-        meta_model = meta_model.reshape(meta_model.shape[1], meta_model.shape[0])
+        meta_model = meta_model.T
 
         # Transpose test predictions
-        test_predictions = test_predictions.reshape(test_predictions.shape[1], test_predictions.shape[0])
+        test_predictions = test_predictions.T
 
         print(f"Meta model: {meta_model.shape}")
         print(f"Test predictions: {test_predictions.shape}")
+        
+        self.train_level_1(final_learner, meta_model, test_predictions)
 
 
     def k_fold_cross_validation(self, clf):
@@ -98,12 +102,17 @@ class Ensemble:
 
         return predictions_clf
 
-    def train(self, clf):
+    def train_level_0(self, clf):
         clf.fit(self.x_train, self.y_train)
         y_pred = clf.predict(self.x_test)
-
+        
         return y_pred
-            
+
+    def train_level_1(self, final_learner, meta_model, test_predictions):
+        final_learner.fit(meta_model, self.y_train)
+        print(f"Train accuracy: {final_learner.score(meta_model,  self.y_train)}")
+        print(f"Test accuracy: {final_learner.score(test_predictions, self.y_test)}")
+        
 
 
 
@@ -111,4 +120,3 @@ if __name__ == "__main__":
     ensemble = Ensemble()
     ensemble.load_data()
     ensemble.StackingClassifier()
-    # ensemble.k_fold_cross_validation()

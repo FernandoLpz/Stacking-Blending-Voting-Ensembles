@@ -2,7 +2,10 @@ from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 
 from sklearn.model_selection import GridSearchCV
@@ -88,48 +91,55 @@ class Ensemble:
         mlflow.log_metric(f'vc_train_acc', vc.score(self.x_train, self.y_train))
         mlflow.log_metric(f'vc_test_acc', vc.score(self.x_test, self.y_test))
 
-    # def __StackingClassifier__(self):
+    def __StackingClassifier__(self):
         
-    #     # Instantiate classifiers
-    #     decision_tree = Ensemble.__Classifiers__(name='decision_tree')
-    #     knn = Ensemble.__Classifiers__(name='kneighbors')
-    #     svm = Ensemble.__Classifiers__(name='svm')
+        # Instantiate classifiers
+        # decision_tree = Ensemble.__Classifiers__(name='decision_tree')
+        # knn = Ensemble.__Classifiers__(name='kneighbors')
+        # svm = Ensemble.__Classifiers__(name='svm')
         
-    #     # Definition of classifiers base
-    #     estimators = [('decision_tree', decision_tree), ('svm', svm)]
+        # Definition of classifiers base
+        estimators = [('dt', DecisionTreeClassifier()),
+                        ('knn', KNeighborsClassifier()),
+                        ('rf', RandomForestClassifier()),
+                        ('gb', GradientBoostingClassifier()),
+                        ('gn', GaussianNB())]
         
-    #     # Stacked Classifier initialization
-    #     # It is defined as final estimator the K-nearest neighbors classifier
-    #     sc = StackingClassifier(estimators=estimators, final_estimator=knn)
+        # Stacked Classifier initialization
+        # It is defined as final estimator the K-nearest neighbors classifier
+        self.sc = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression(), stack_method='predict')
         
-    #     # Initi model
-    #     sc.fit(self.x_train, self.y_train)
+        # Initi model
+        self.sc.fit(self.x_train, self.y_train)
+        
+        print(f"Train acc: {self.sc.score(self.x_train, self.y_train)}")
+        print(f"Test acc: {self.sc.score(self.x_test, self.y_test)}")
 
-    #     # Loggin metrics with MLFlow
-    #     mlflow.log_metric(f'sc_train_acc', sc.score(self.x_train, self.y_train))
-    #     mlflow.log_metric(f'sc_test_acc', sc.score(self.x_test, self.y_test))
+        # Loggin metrics with MLFlow
+        mlflow.log_metric(f'sc_train_acc', self.sc.score(self.x_train, self.y_train))
+        mlflow.log_metric(f'sc_test_acc', self.sc.score(self.x_test, self.y_test))
 
 if __name__ == "__main__":
     client = MlflowClient()
-    experiment_id = client.create_experiment('Ensemble_basic_3')
+    experiment_id = client.create_experiment('Ensemble_basic_11')
 
     ensemble = Ensemble()
     ensemble.load_data()
 
-    with mlflow.start_run(experiment_id=experiment_id, run_name='Decision_Tree'):
-        ensemble.__DecisionTreeClassifier__()
+    # with mlflow.start_run(experiment_id=experiment_id, run_name='Decision_Tree'):
+    #     ensemble.__DecisionTreeClassifier__()
     
-    with mlflow.start_run(experiment_id=experiment_id, run_name='SVM'):
-        ensemble.__SupporVectorMachineClassifier__()
+    # with mlflow.start_run(experiment_id=experiment_id, run_name='SVM'):
+    #     ensemble.__SupporVectorMachineClassifier__()
 
-    with mlflow.start_run(experiment_id=experiment_id, run_name='KNN'):
-        ensemble.__KNearestNeighborsClassifier__()
+    # with mlflow.start_run(experiment_id=experiment_id, run_name='KNN'):
+    #     ensemble.__KNearestNeighborsClassifier__()
     
-    with mlflow.start_run(experiment_id=experiment_id, run_name='Logistic_Regression'):
-        ensemble.__LogisticRegression__()
+    # with mlflow.start_run(experiment_id=experiment_id, run_name='Logistic_Regression'):
+    #     ensemble.__LogisticRegression__()
     
-    with mlflow.start_run(experiment_id=experiment_id, run_name='VotingClassifier'):
-        ensemble.__VotingClassifier__()
+    # with mlflow.start_run(experiment_id=experiment_id, run_name='VotingClassifier'):
+    #     ensemble.__VotingClassifier__()
     
-    # with mlflow.start_run(experiment_id=experiment_id, run_name='Stacked_Classifier'):
-    #     ensemble.__StackingClassifier__()
+    with mlflow.start_run(experiment_id=experiment_id, run_name='Stacked_Classifier'):
+        ensemble.__StackingClassifier__()
