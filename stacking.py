@@ -23,43 +23,49 @@ class Ensemble:
     
     def StackingClassifier(self):
 
+        # Define weak learners
         weak_learners = [('dt', DecisionTreeClassifier()),
                         ('knn', KNeighborsClassifier()),
                         ('rf', RandomForestClassifier()),
                         ('gb', GradientBoostingClassifier()),
                         ('gn', GaussianNB())]
         
+        # Finaler learner or meta model
         final_learner = LogisticRegression()
 
-        meta_model = None
-        test_predictions = None
+        train_meta_model = None
+        test_meta_model = None
 
+        # Start stacking
         for clf_id, clf in weak_learners:
+            # Predictions for each classifier based on k-fold
             predictions_clf = self.k_fold_cross_validation(clf)
+            
+            # Predictions for test set for each classifier based on train of level 0
             test_predictions_clf = self.train_level_0(clf)
             
-            # Store predictions for the current classifier
-            if isinstance(meta_model, np.ndarray):
-                meta_model = np.vstack((meta_model, predictions_clf))
+            # Stack predictions which will form 
+            # the inputa data for the data model
+            if isinstance(train_meta_model, np.ndarray):
+                train_meta_model = np.vstack((train_meta_model, predictions_clf))
             else:
-                meta_model = predictions_clf
+                train_meta_model = predictions_clf
 
-            # Store predictions for the current classifier
-            if isinstance(test_predictions, np.ndarray):
-                test_predictions = np.vstack((test_predictions, test_predictions_clf))
+            # Stack predictions from test set
+            # which will form test data for meta model
+            if isinstance(test_meta_model, np.ndarray):
+                test_meta_model = np.vstack((test_meta_model, test_predictions_clf))
             else:
-                test_predictions = test_predictions_clf
+                test_meta_model = test_predictions_clf
         
-        # Transpose the meta_model
-        meta_model = meta_model.T
+        # Transpose train_meta_model
+        train_meta_model = train_meta_model.T
 
-        # Transpose test predictions
-        test_predictions = test_predictions.T
-
-        print(f"Meta model: {meta_model.shape}")
-        print(f"Test predictions: {test_predictions.shape}")
+        # Transpose test_meta_model
+        test_meta_model = test_meta_model.T
         
-        self.train_level_1(final_learner, meta_model, test_predictions)
+        # Training level 1
+        self.train_level_1(final_learner, train_meta_model, test_meta_model)
 
 
     def k_fold_cross_validation(self, clf):
@@ -103,18 +109,20 @@ class Ensemble:
         return predictions_clf
 
     def train_level_0(self, clf):
+        # Train in full real training set
         clf.fit(self.x_train, self.y_train)
+        # Get predictions from full real test set
         y_pred = clf.predict(self.x_test)
         
         return y_pred
 
-    def train_level_1(self, final_learner, meta_model, test_predictions):
-        final_learner.fit(meta_model, self.y_train)
-        print(f"Train accuracy: {final_learner.score(meta_model,  self.y_train)}")
-        print(f"Test accuracy: {final_learner.score(test_predictions, self.y_test)}")
+    def train_level_1(self, final_learner, train_meta_model, test_meta_model):
+        # Train is carried out with final learner or meta model
+        final_learner.fit(train_meta_model, self.y_train)
+        # Getting train and test accuracies from meta_model
+        print(f"Train accuracy: {final_learner.score(train_meta_model,  self.y_train)}")
+        print(f"Test accuracy: {final_learner.score(test_meta_model, self.y_test)}")
         
-
-
 
 if __name__ == "__main__":
     ensemble = Ensemble()

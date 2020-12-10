@@ -91,34 +91,6 @@ class Ensemble:
         mlflow.log_metric(f'vc_train_acc', vc.score(self.x_train, self.y_train))
         mlflow.log_metric(f'vc_test_acc', vc.score(self.x_test, self.y_test))
 
-    def __StackingClassifier__(self):
-        
-        # Instantiate classifiers
-        # decision_tree = Ensemble.__Classifiers__(name='decision_tree')
-        # knn = Ensemble.__Classifiers__(name='kneighbors')
-        # svm = Ensemble.__Classifiers__(name='svm')
-        
-        # Definition of classifiers base
-        estimators = [('dt', DecisionTreeClassifier()),
-                        ('knn', KNeighborsClassifier()),
-                        ('rf', RandomForestClassifier()),
-                        ('gb', GradientBoostingClassifier()),
-                        ('gn', GaussianNB())]
-        
-        # Stacked Classifier initialization
-        # It is defined as final estimator the K-nearest neighbors classifier
-        self.sc = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression(), stack_method='predict')
-        
-        # Initi model
-        self.sc.fit(self.x_train, self.y_train)
-        
-        print(f"Train acc: {self.sc.score(self.x_train, self.y_train)}")
-        print(f"Test acc: {self.sc.score(self.x_test, self.y_test)}")
-
-        # Loggin metrics with MLFlow
-        mlflow.log_metric(f'sc_train_acc', self.sc.score(self.x_train, self.y_train))
-        mlflow.log_metric(f'sc_test_acc', self.sc.score(self.x_test, self.y_test))
-
 if __name__ == "__main__":
     client = MlflowClient()
     experiment_id = client.create_experiment('Ensemble_basic_11')
