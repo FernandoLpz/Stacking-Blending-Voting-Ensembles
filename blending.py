@@ -15,7 +15,6 @@ class Ensemble:
         self.x_test = None
         self.y_train = None
         self.y_test = None
-        self.k = 5
 
     def load_data(self):
         x, y = load_breast_cancer(return_X_y=True)
@@ -84,6 +83,7 @@ class Ensemble:
     def train_level_1(self, final_learner, train_meta_model, test_meta_model):
         # Train is carried out with final learner or meta model
         final_learner.fit(train_meta_model, self.y_val)
+       
         # Getting train and test accuracies from meta_model
         print(f"Train accuracy: {final_learner.score(train_meta_model,  self.y_val)}")
         print(f"Test accuracy: {final_learner.score(test_meta_model, self.y_test)}")
