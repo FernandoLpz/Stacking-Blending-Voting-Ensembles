@@ -5,8 +5,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 
-from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import VotingClassifier
+from sklearn.metrics import accuracy_score
 
 
 class Ensemble:
@@ -24,38 +24,38 @@ class Ensemble:
     def __Classifiers__(name=None):
         # See for reproducibility
         random_state = 23
-        
+
         if name == 'decision_tree':
             return DecisionTreeClassifier(random_state=random_state)
         if name == 'kneighbors':
             return KNeighborsClassifier()
         if name == 'logistic_regression':
-            return LogisticRegression(random_state=random_state)
+            return LogisticRegression(random_state=random_state, solver='liblinear')
 
     def __DecisionTreeClassifier__(self):
-        
+
         # Decision Tree Classifier
         decision_tree = Ensemble.__Classifiers__(name='decision_tree')
-        
+
         # Train Decision Tree
         decision_tree.fit(self.x_train, self.y_train)
 
     def __KNearestNeighborsClassifier__(self):
-        
+
         # K-Nearest Neighbors Classifier
         knn = Ensemble.__Classifiers__(name='kneighbors')
-        
+
         # Train K-Nearest Neighbos
         knn.fit(self.x_train, self.y_train)
 
     def __LogisticRegression__(self):
-        
+
         # Decision Tree Classifier
         logistic_regression = Ensemble.__Classifiers__(name='logistic_regression')
-        
+
         # Init Grid Search
         logistic_regression.fit(self.x_train, self.y_train)
-    
+
     def __VotingClassifier__(self):
 
         # Instantiate classifiers
@@ -64,15 +64,22 @@ class Ensemble:
         logistic_regression = Ensemble.__Classifiers__(name='logistic_regression')
 
         # Voting Classifier initialization
-        vc = VotingClassifier(estimators=[('decision_tree', decision_tree), 
-                                        ('knn', knn), ('logistic_regression', 
-                                        logistic_regression)], voting='soft')
-        
-        # Init Grid Search
+        vc = VotingClassifier(estimators=[('decision_tree', decision_tree),
+                                          ('knn', knn), ('logistic_regression',
+                                                         logistic_regression)], voting='soft')
+
+        # Fitting the vc model
         vc.fit(self.x_train, self.y_train)
 
-if __name__ == "__main__":
+        # Getting train and test accuracies from meta_model
+        y_pred_train = vc.predict(self.x_train)
+        y_pred = vc.predict(self.x_test)
 
+        print(f"Train accuracy: {accuracy_score(self.y_train, y_pred_train)}")
+        print(f"Test accuracy: {accuracy_score(self.y_test, y_pred)}")
+
+
+if __name__ == "__main__":
     ensemble = Ensemble()
     ensemble.load_data()
-    ensemble.__StackingClassifier__()
+    ensemble.__VotingClassifier__()

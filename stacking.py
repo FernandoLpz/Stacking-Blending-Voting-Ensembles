@@ -9,6 +9,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 
+
 class Ensemble:
     def __init__(self):
         self.x_train = None
@@ -20,17 +21,17 @@ class Ensemble:
     def load_data(self):
         x, y = load_breast_cancer(return_X_y=True)
         self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x, y, test_size=0.3, random_state=23)
-    
+
     def StackingClassifier(self):
 
         # Define weak learners
         weak_learners = [('dt', DecisionTreeClassifier()),
-                        ('knn', KNeighborsClassifier()),
-                        ('rf', RandomForestClassifier()),
-                        ('gb', GradientBoostingClassifier()),
-                        ('gn', GaussianNB())]
-        
-        # Finaler learner or meta model
+                         ('knn', KNeighborsClassifier()),
+                         ('rf', RandomForestClassifier()),
+                         ('gb', GradientBoostingClassifier()),
+                         ('gn', GaussianNB())]
+
+        # Final learner or meta model
         final_learner = LogisticRegression()
 
         train_meta_model = None
@@ -40,12 +41,12 @@ class Ensemble:
         for clf_id, clf in weak_learners:
             # Predictions for each classifier based on k-fold
             predictions_clf = self.k_fold_cross_validation(clf)
-            
+
             # Predictions for test set for each classifier based on train of level 0
             test_predictions_clf = self.train_level_0(clf)
-            
+
             # Stack predictions which will form 
-            # the inputa data for the data model
+            # the input data for the data model
             if isinstance(train_meta_model, np.ndarray):
                 train_meta_model = np.vstack((train_meta_model, predictions_clf))
             else:
@@ -57,19 +58,18 @@ class Ensemble:
                 test_meta_model = np.vstack((test_meta_model, test_predictions_clf))
             else:
                 test_meta_model = test_predictions_clf
-        
+
         # Transpose train_meta_model
         train_meta_model = train_meta_model.T
 
         # Transpose test_meta_model
         test_meta_model = test_meta_model.T
-        
+
         # Training level 1
         self.train_level_1(final_learner, train_meta_model, test_meta_model)
 
-
     def k_fold_cross_validation(self, clf):
-        
+
         predictions_clf = None
 
         # Number of samples per fold
@@ -87,14 +87,16 @@ class Ensemble:
                 test = self.x_train[(batch_size * fold): (batch_size * (fold + 1)), :]
                 batch_start = batch_size * fold
                 batch_finish = batch_size * (fold + 1)
-            
+
             # test & training samples for each fold iteration
             fold_x_test = self.x_train[batch_start:batch_finish, :]
-            fold_x_train = self.x_train[[index for index in range(self.x_train.shape[0]) if index not in range(batch_start, batch_finish)], :]
+            fold_x_train = self.x_train[[index for index in range(self.x_train.shape[0]) if
+                                         index not in range(batch_start, batch_finish)], :]
 
             # test & training targets for each fold iteration
             fold_y_test = self.y_train[batch_start:batch_finish]
-            fold_y_train = self.y_train[[index for index in range(self.x_train.shape[0]) if index not in range(batch_start, batch_finish)]]
+            fold_y_train = self.y_train[
+                [index for index in range(self.x_train.shape[0]) if index not in range(batch_start, batch_finish)]]
 
             # Fit current classifier
             clf.fit(fold_x_train, fold_y_train)
@@ -113,16 +115,16 @@ class Ensemble:
         clf.fit(self.x_train, self.y_train)
         # Get predictions from full real test set
         y_pred = clf.predict(self.x_test)
-        
+
         return y_pred
 
     def train_level_1(self, final_learner, train_meta_model, test_meta_model):
         # Train is carried out with final learner or meta model
         final_learner.fit(train_meta_model, self.y_train)
         # Getting train and test accuracies from meta_model
-        print(f"Train accuracy: {final_learner.score(train_meta_model,  self.y_train)}")
+        print(f"Train accuracy: {final_learner.score(train_meta_model, self.y_train)}")
         print(f"Test accuracy: {final_learner.score(test_meta_model, self.y_test)}")
-        
+
 
 if __name__ == "__main__":
     ensemble = Ensemble()
